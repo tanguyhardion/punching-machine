@@ -1,34 +1,48 @@
-import { mockScores } from '../data/mockScores'
-
-const latency = (delay = 300) =>
-  new Promise((resolve) => {
-    setTimeout(resolve, delay)
-  })
+const BASE_URL = '/api/scores'
 
 /**
- * Temporary in-memory state that mimics backend responses.
- * Replace these methods with calls to your Vercel API + Supabase.
+ * Fetches with a timeout and parses the JSON response.
+ * Throws a unified Error for both HTTP errors and network failures.
  */
-let scores = [...mockScores]
+async function apiFetch(url, options = {}) {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 8000)
 
-export const scoresApi = {
-  async list() {
-    await latency()
-    return [...scores]
-  },
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal })
+    clearTimeout(timeout)
 
-  async create(payload) {
-    await latency(200)
-
-    const newEntry = {
-      id: crypto.randomUUID(),
-      player: payload.player.trim(),
-      score: Number(payload.score),
-      power: payload.power.trim() || 'Arcade Smash',
-      createdAt: new Date().toISOString(),
+    if (!res.ok) {
+      // Surface a generic message; do not log server-side details to console.
+      throw new Error(`Request failed (${res.status})`)
     }
 
-    scores = [newEntry, ...scores]
-    return newEntry
+    return res.json()
+  } catch (err) {
+    clearTimeout(timeout)
+    throw err
+  }
+}
+
+export const scoresApi = {
+  /** Returns all scores sorted by score descending (from the backend). */
+  async list() {
+    return apiFetch(BASE_URL)
+  },
+
+  /**
+   * Creates a new score entry.
+   * @param {{ player: string, score: number|string, power?: string }} payload
+   */
+  async create(payload) {
+    return apiFetch(BASE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        player: payload.player,
+        score: payload.score,
+        power: payload.power,
+      }),
+    })
   },
 }
