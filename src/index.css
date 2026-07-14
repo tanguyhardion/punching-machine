@@ -37,7 +37,6 @@ body {
 .ambient-glow {
   position: absolute;
   inset: 1.5rem;
-  border: 1px solid #6ac8ff50;
   border-radius: 1.5rem;
   box-shadow:
     0 0 45px #17d4ff20,
