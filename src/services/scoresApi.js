@@ -50,4 +50,19 @@ export const scoresApi = {
       }),
     })
   },
+
+  /**
+   * Deletes a score entry by id.
+   * @param {string} id  UUID of the entry to delete
+   * @param {string} password  Master submit password
+   */
+  async delete(id, password) {
+    return apiFetch(`${BASE_URL}?id=${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+      headers: {
+        'X-Submit-Password': password ?? '',
+      },
+    })
+  },
 }
+

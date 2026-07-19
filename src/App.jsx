@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Leaderboard } from './components/Leaderboard'
 import { ScoreForm } from './components/ScoreForm'
 import { ScoreStats } from './components/ScoreStats'
@@ -10,6 +10,8 @@ function App() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [flashScore, setFlashScore] = useState(null)
   const [error, setError] = useState('')
+  // Remember the password once verified so the user isn't re-prompted per delete
+  const cachedPassword = useRef(null)
 
   useEffect(() => {
     const loadScores = async () => {
@@ -37,6 +39,7 @@ function App() {
 
     try {
       const created = await scoresApi.create(form, password)
+      cachedPassword.current = password
       setEntries((current) => [created, ...current])
       setFlashScore(created)
       setTimeout(() => setFlashScore(null), 1600)
@@ -50,6 +53,22 @@ function App() {
       setError('Score upload interrupted. Retry your punch.')
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  const handleDelete = async (id, password) => {
+    setError('')
+    try {
+      await scoresApi.delete(id, password)
+      cachedPassword.current = password
+      setEntries((current) => current.filter((e) => e.id !== id))
+    } catch (err) {
+      const msg = err?.message ?? ''
+      if (msg.includes('401')) {
+        // Re-throw so Leaderboard can open the password gate
+        throw err
+      }
+      setError('Failed to delete entry. Try again.')
     }
   }
 
@@ -83,7 +102,15 @@ function App() {
 
         <section className="arena-grid">
           <ScoreForm onSubmit={handleSubmit} isSubmitting={isSubmitting} />
-          {isLoading ? <p className="loading">Powering the scoreboard...</p> : <Leaderboard entries={sortedEntries} />}
+          {isLoading ? (
+            <p className="loading">Powering the scoreboard...</p>
+          ) : (
+            <Leaderboard
+              entries={sortedEntries}
+              onDelete={handleDelete}
+              cachedPassword={cachedPassword}
+            />
+          )}
         </section>
       </main>
     </div>
@@ -91,3 +118,4 @@ function App() {
 }
 
 export default App
+
