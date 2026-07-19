@@ -34,11 +34,15 @@ export const scoresApi = {
   /**
    * Creates a new score entry.
    * @param {{ player: string, score: number|string, power?: string }} payload
+   * @param {string} password  Master submit password
    */
-  async create(payload) {
+  async create(payload, password) {
     return apiFetch(BASE_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Submit-Password': password ?? '',
+      },
       body: JSON.stringify({
         player: payload.player,
         score: payload.score,

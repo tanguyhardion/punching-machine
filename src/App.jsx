@@ -31,16 +31,22 @@ function App() {
     [entries],
   )
 
-  const handleSubmit = async (form) => {
+  const handleSubmit = async (form, password) => {
     setError('')
     setIsSubmitting(true)
 
     try {
-      const created = await scoresApi.create(form)
+      const created = await scoresApi.create(form, password)
       setEntries((current) => [created, ...current])
       setFlashScore(created)
       setTimeout(() => setFlashScore(null), 1600)
-    } catch {
+    } catch (err) {
+      const msg = err?.message ?? ''
+      if (msg.includes('401')) {
+        // Let ScoreForm handle the wrong-password UI; re-throw so it knows
+        setIsSubmitting(false)
+        throw err
+      }
       setError('Score upload interrupted. Retry your punch.')
     } finally {
       setIsSubmitting(false)
