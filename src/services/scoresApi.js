@@ -1,4 +1,5 @@
-const BASE_URL = '/api/scores'
+const API_URL = import.meta.env.VITE_API_URL || ''
+const BASE_URL = `${API_URL}/api/scores`
 
 /**
  * Fetches with a timeout and parses the JSON response.
